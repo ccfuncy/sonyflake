@@ -170,7 +170,8 @@ func TestNilSonyflake(t *testing.T) {
 }
 
 func pseudoSleep(period time.Duration) {
-	sf.startTime -= int64(period) / sonyflakeTimeUnit
+	//sf.startTime -= int64(period) / sonyflakeTimeUnit
+	sf.startTime = sf.startTime.Add(-period)
 }
 
 func TestNextIDError(t *testing.T) {
@@ -189,4 +190,20 @@ func TestSonyflakeTimeUnit(t *testing.T) {
 	if time.Duration(sonyflakeTimeUnit) != 10*time.Millisecond {
 		t.Errorf("unexpected time unit")
 	}
+}
+
+func TestSonyflakeOnceErr(t *testing.T) {
+	sleepTime := time.Duration(50 * sonyflakeTimeUnit)
+	time.Sleep(sleepTime)
+
+	id := nextID(t)
+	fmt.Println("sonyflake id:", id)
+	fmt.Println("decompose:", Decompose(id))
+	time.Sleep(sleepTime)
+
+	sf.startTime = time.Now().Add(time.Hour * 12)
+	id = nextID(t)
+	fmt.Println("sonyflake id:", id)
+	fmt.Println("decompose:", Decompose(id))
+
 }

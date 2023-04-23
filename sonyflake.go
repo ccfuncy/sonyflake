@@ -44,7 +44,7 @@ type Settings struct {
 // Sonyflake is a distributed unique ID generator.
 type Sonyflake struct {
 	mutex       *sync.Mutex
-	startTime   int64
+	startTime   time.Time
 	elapsedTime int64
 	sequence    uint16
 	machineID   uint16
@@ -64,9 +64,9 @@ func NewSonyflake(st Settings) *Sonyflake {
 		return nil
 	}
 	if st.StartTime.IsZero() {
-		sf.startTime = toSonyflakeTime(time.Date(2014, 9, 1, 0, 0, 0, 0, time.UTC))
+		sf.startTime = time.Now()
 	} else {
-		sf.startTime = toSonyflakeTime(st.StartTime)
+		sf.startTime = st.StartTime
 	}
 
 	var err error
@@ -90,7 +90,7 @@ func (sf *Sonyflake) NextID() (uint64, error) {
 	sf.mutex.Lock()
 	defer sf.mutex.Unlock()
 
-	current := currentElapsedTime(sf.startTime)
+	current := currentElapsedMonoTime(sf.startTime)
 	if sf.elapsedTime < current {
 		sf.elapsedTime = current
 		sf.sequence = 0
@@ -112,8 +112,8 @@ func toSonyflakeTime(t time.Time) int64 {
 	return t.UTC().UnixNano() / sonyflakeTimeUnit
 }
 
-func currentElapsedTime(startTime int64) int64 {
-	return toSonyflakeTime(time.Now()) - startTime
+func currentElapsedMonoTime(startTime time.Time) int64 {
+	return time.Now().Sub(startTime).Nanoseconds() / sonyflakeTimeUnit
 }
 
 func sleepTime(overtime int64) time.Duration {
